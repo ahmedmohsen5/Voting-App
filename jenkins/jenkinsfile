@@ -82,17 +82,15 @@ pipeline {
         //}
     }
 
-    post {
-        always {
-            cleanWs()  // Clean up the workspace after the build
-        }
-
-        success {
-            echo 'Build, test, and deployment completed successfully!'
-        }
-
-        failure {
-            echo 'Build or deployment failed!'
-        }
-    }
+    //post {
+    //    always {
+    //        cleanWs()  // Clean up the workspace after the build
+    //    }
+    //    success {
+    //        echo 'Build, test, and deployment completed successfully!'
+    //    }
+    //    failure {
+    //        echo 'Build or deployment failed!'
+    //    }
+    //}
 }
