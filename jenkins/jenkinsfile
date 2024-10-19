@@ -2,11 +2,11 @@ pipeline {
     agent any
     environment {
         // Define your services with build and test commands per language
-        SERVICES = [
+        SERVICES = '''[
             [name: 'worker', buildCmd: 'mvn clean package', testCmd: 'mvn test'],  // Java with Maven
             [name: 'vote', buildCmd: 'npm install', testCmd: 'npm test'],           // Node.js with npm
             [name: 'result', buildCmd: 'go build ./...', testCmd: 'go test ./...'],  // Go with Go toolchain
-        ]
+        ]'''
     }
 
     stages {
