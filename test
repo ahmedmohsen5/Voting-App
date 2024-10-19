@@ -1,0 +1,48 @@
+pipeline {
+    agent any  // Use any available Jenkins agent
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout the code from the Git repository
+                git url: 'https://github.com/ahmedmohsen5/Voting-App.git', branch: 'main'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build a Docker image
+                    def imageName = 'voting-app'
+                    def imageTag = 'latest'
+                    sh "docker build -t ${imageName}:${imageTag} ."
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            when {
+                expression {
+                    // Only push if we're on the 'main' branch
+                    return env.BRANCH_NAME == 'main'
+                }
+            }
+            steps {
+                script {
+                    // Push the Docker image to a registry (e.g., DockerHub)
+                    def imageName = 'voting-app'
+                    def imageTag = 'latest'
+                    sh "docker login -u $DOCKER_USER -p $DOCKER_PASS"
+                    sh "docker push ${imageName}:${imageTag}"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Clean up the workspace after the pipeline finishes
+            cleanWs()
+        }
+    }
+}

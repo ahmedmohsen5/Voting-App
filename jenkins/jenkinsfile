@@ -5,6 +5,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo 'Checking out the code...'
+                git url: 'https://github.com/ahmedmohsen5/Voting-App.git', branch: 'main'
             }
         }
 
