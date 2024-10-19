@@ -20,7 +20,7 @@ pipeline {
                     services.each { service ->
                         dir(service.name) {
                             echo "Building Docker image for ${service.name}..."
-                            sh "docker build -t ${DOCKER_REPO}/${service.name}:${env.BUILD_NUMBER} ."
+                            //sh "docker build -t ${DOCKER_REPO}/${service.name}:${env.BUILD_NUMBER} ."
                         }
                     }
                 }
@@ -39,7 +39,7 @@ pipeline {
                     // Push Docker images to registry
                     services.each { service ->
                         echo "Pushing Docker image for ${service.name}..."
-                        sh "docker push ${DOCKER_REPO}/${service.name}:${env.BUILD_NUMBER}"
+                        //sh "docker push ${DOCKER_REPO}/${service.name}:${env.BUILD_NUMBER}"
                     }
                 }
             }
