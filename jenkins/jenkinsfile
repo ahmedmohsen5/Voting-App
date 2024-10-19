@@ -1,96 +1,53 @@
 pipeline {
     agent any
-
+    
     environment {
         DOCKER_REPO = "ahmed5555555555"
-        
-        SERVICES = '''[
-            [name: 'result', buildCmd: 'mvn clean package', testCmd: 'mvn test'],  // Java with Maven
-            [name: 'vote', buildCmd: 'npm install', testCmd: 'npm test'],           // Node.js with npm
-            [name: 'worker', buildCmd: 'go build ./...', testCmd: 'go test ./...'],  // Go with Go toolchain
-            
-        ]'''
     }
-
+    
     stages {
         stage('Checkout') {
             steps {
-                // Checkout code from your Git repository (assumes monorepo structure)
                 git branch: 'main', url: 'https://github.com/ahmedmohsen5/Voting-App.git'
             }
         }
-
-        //stage('Build and Test Microservices') {
-        //    steps {
-        //        script {
-        //            // Iterate over each service, running its specific build and test commands
-        //            for (service in SERVICES) {
-        //                dir(service.name) {
-        //                    echo "Building and testing ${service.name}..."
-        //                    
-        //                    // Execute the build command for the current service
-        //                    sh service.buildCmd
-        //                    
-        //                    // Execute the test command for the current service
-        //                    sh service.testCmd
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
-
+        
         stage('Build Docker Images') {
             steps {
                 script {
+                    def services = '''[
+                        [name: 'result', buildCmd: 'mvn clean package', testCmd: 'mvn test'],
+                        [name: 'vote', buildCmd: 'npm install', testCmd: 'npm test'],
+                        [name: 'worker', buildCmd: 'go build ./...', testCmd: 'go test ./...']
+                    ]'''
+                    
                     // Build Docker images for each microservice
-                    for (service in SERVICES) {
+                    services.each { service ->
                         dir(service.name) {
                             echo "Building Docker image for ${service.name}..."
-                            sh "docker build -t ${DOCKER_REPO}/${service.name}:${env.BUILD_NUMBER} ${service.name}/"
+                            sh "docker build -t ${DOCKER_REPO}/${service.name}:${env.BUILD_NUMBER} ."
                         }
                     }
                 }
             }
         }
-
+        
         stage('Push Docker Images') {
             steps {
                 script {
-                    // Push Docker images to your registry
-                    for (service in SERVICES) {
+                    def services = [
+                        [name: 'result'],
+                        [name: 'vote'],
+                        [name: 'worker']
+                    ]
+                    
+                    // Push Docker images to registry
+                    services.each { service ->
                         echo "Pushing Docker image for ${service.name}..."
                         sh "docker push ${DOCKER_REPO}/${service.name}:${env.BUILD_NUMBER}"
                     }
                 }
             }
         }
-
-        //stage('Deploy to Kubernetes') {
-        //    steps {
-        //        script {
-        //            // Deploy to Kubernetes, updating the deployment with the new image
-        //            for (service in SERVICES) {
-        //                echo "Deploying ${service.name} to Kubernetes..."
-        //                sh """
-        //                kubectl set image deployment/${service.name} \
-        //                ${service.name}=your-registry/${service.name}:${env.BUILD_NUMBER} \
-        //                -n default
-        //                """
-        //            }
-        //        }
-        //    }
-        //}
     }
-
-    //post {
-    //    always {
-    //        cleanWs()  // Clean up the workspace after the build
-    //    }
-    //    success {
-    //        echo 'Build, test, and deployment completed successfully!'
-    //    }
-    //    failure {
-    //        echo 'Build or deployment failed!'
-    //    }
-    //}
 }
