@@ -1,48 +1,38 @@
 pipeline {
     agent any
-    
-    environment {
-        DOCKER_REPO = "ahmed5555555555"
-    }
-    
+
     stages {
-        
-        stage('Build Docker Images') {
+        stage('Checkout') {
             steps {
-                script {
-                    def services = '''[
-                        [name: 'result', buildCmd: 'mvn clean package', testCmd: 'mvn test'],
-                        [name: 'vote', buildCmd: 'npm install', testCmd: 'npm test'],
-                        [name: 'worker', buildCmd: 'go build ./...', testCmd: 'go test ./...']
-                    ]'''
-                    
-                    // Build Docker images for each microservice
-                    services.each { service ->
-                        dir(service.name) {
-                            echo "Building Docker image for ${service.name}..."
-                            //sh "docker build -t ${DOCKER_REPO}/${service.name}:${env.BUILD_NUMBER} ."
-                        }
-                    }
-                }
+                echo 'Checking out the code...'
             }
         }
-        
-        stage('Push Docker Images') {
+
+        stage('Build') {
             steps {
-                script {
-                    def services = [
-                        [name: 'result'],
-                        [name: 'vote'],
-                        [name: 'worker']
-                    ]
-                    
-                    // Push Docker images to registry
-                    services.each { service ->
-                        echo "Pushing Docker image for ${service.name}..."
-                        //sh "docker push ${DOCKER_REPO}/${service.name}:${env.BUILD_NUMBER}"
-                    }
-                }
+                echo 'Building the project...'
             }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running tests...'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying the application...'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
