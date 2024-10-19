@@ -1,39 +1,81 @@
 pipeline {
-    agent any  // Use any available Jenkins agent
+    agent any
+
+    environment {
+        // Define your services with build and test commands per language
+        SERVICES = [
+            [name: 'product-service', buildCmd: 'mvn clean package', testCmd: 'mvn test'],  // Java with Maven
+            [name: 'user-service', buildCmd: 'npm install', testCmd: 'npm test'],           // Node.js with npm
+            [name: 'order-service', buildCmd: 'go build ./...', testCmd: 'go test ./...'],  // Go with Go toolchain
+            [name: 'payment-service', buildCmd: 'pip install -r requirements.txt', testCmd: 'pytest']  // Python with pytest
+        ]
+    }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from the Git repository
-                git url: 'https://github.com/ahmedmohsen5/Voting-App.git', branch: 'main'
+                // Checkout code from your Git repository (assumes monorepo structure)
+                git branch: 'main', url: 'https://github.com/your-repo/microservices.git'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build and Test Microservices') {
             steps {
                 script {
-                    // Build a Docker image
-                    def imageName = 'voting-app'
-                    def imageTag = 'latest'
-                    sh "docker build -t ${imageName}:${imageTag} ."
+                    // Iterate over each service, running its specific build and test commands
+                    for (service in SERVICES) {
+                        dir(service.name) {
+                            echo "Building and testing ${service.name}..."
+                            
+                            // Execute the build command for the current service
+                            sh service.buildCmd
+                            
+                            // Execute the test command for the current service
+                            sh service.testCmd
+                        }
+                    }
                 }
             }
         }
 
-        stage('Push Docker Image') {
-            when {
-                expression {
-                    // Only push if we're on the 'main' branch
-                    return env.BRANCH_NAME == 'main'
-                }
-            }
+        stage('Build Docker Images') {
             steps {
                 script {
-                    // Push the Docker image to a registry (e.g., DockerHub)
-                    def imageName = 'voting-app'
-                    def imageTag = 'latest'
-                    sh "docker login -u $DOCKER_USER -p $DOCKER_PASS"
-                    sh "docker push ${imageName}:${imageTag}"
+                    // Build Docker images for each microservice
+                    for (service in SERVICES) {
+                        dir(service.name) {
+                            echo "Building Docker image for ${service.name}..."
+                            sh "docker build -t your-registry/${service.name}:${env.BUILD_NUMBER} ."
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker Images') {
+            steps {
+                script {
+                    // Push Docker images to your registry
+                    for (service in SERVICES) {
+                        echo "Pushing Docker image for ${service.name}..."
+                        sh "docker push your-registry/${service.name}:${env.BUILD_NUMBER}"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    // Deploy to Kubernetes, updating the deployment with the new image
+                    for (service in SERVICES) {
+                        echo "Deploying ${service.name} to Kubernetes..."
+                        sh """
+                        kubectl set image deployment/${service.name} \
+                        ${service.name}=your-registry/${service.name}:${env.BUILD_NUMBER} \
+                        -n default
+                        """
+                    }
                 }
             }
         }
@@ -41,8 +83,15 @@ pipeline {
 
     post {
         always {
-            // Clean up the workspace after the pipeline finishes
-            cleanWs()
+            cleanWs()  // Clean up the workspace after the build
+        }
+
+        success {
+            echo 'Build, test, and deployment completed successfully!'
+        }
+
+        failure {
+            echo 'Build or deployment failed!'
         }
     }
 }

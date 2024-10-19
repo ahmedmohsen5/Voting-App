@@ -1,5 +1,13 @@
 pipeline {
     agent any
+    environment {
+        // Define your services with build and test commands per language
+        SERVICES = [
+            [name: 'worker', buildCmd: 'mvn clean package', testCmd: 'mvn test'],  // Java with Maven
+            [name: 'vote', buildCmd: 'npm install', testCmd: 'npm test'],           // Node.js with npm
+            [name: 'result', buildCmd: 'go build ./...', testCmd: 'go test ./...'],  // Go with Go toolchain
+        ]
+    }
 
     stages {
         stage('Checkout') {
@@ -9,9 +17,17 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build Docker Images') {
             steps {
-                echo 'Building the project...'
+                script {
+                    // Build Docker images for each microservice
+                    for (service in SERVICES) {
+                        dir(service.name) {
+                            echo "Building Docker image for ${service.name}..."
+                            //sh "docker build -t your-registry/${service.name}:${env.BUILD_NUMBER} ."
+                        }
+                    }
+                }
             }
         }
 
