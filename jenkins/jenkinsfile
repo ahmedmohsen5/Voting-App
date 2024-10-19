@@ -20,8 +20,15 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
+                    // Define the services within the script block as a Groovy list
+                    def services = [
+                        [name: 'worker', buildCmd: 'mvn clean package', testCmd: 'mvn test'],  // Java with Maven
+                        [name: 'vote', buildCmd: 'npm install', testCmd: 'npm test'],           // Node.js with npm
+                        [name: 'result', buildCmd: 'go build ./...', testCmd: 'go test ./...']  // Go with Go toolchain
+                    ]
+
                     // Build Docker images for each microservice
-                    for (service in SERVICES) {
+                    for (service in services) {
                         dir(service.name) {
                             echo "Building Docker image for ${service.name}..."
                             //sh "docker build -t your-registry/${service.name}:${env.BUILD_NUMBER} ."
